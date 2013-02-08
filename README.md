@@ -20,33 +20,30 @@
 isa   = ->(cls) { ->(obj) { cls === obj } }
 email = ->(x) { %r{^.*@.*\.[a-z]+$}.match x }
 
-class Address < Obfusk::Data::Data
+address = Obfusk::Data.data do
   field %w{ street number postal-code town }, [isa[String]]
   field :country, [isa[String]], optional: true
 end
 
-class Person < Obfusk::Data::Data
+person = Obfusk::Data.data do
   field %w{ first_name last_name phone_number }, [isa[String]]
   field :email, [isa[String], email]
-  field :address, [], isa: [Address]
+  field :address, [], isa: [address]
 end
 
-class Tree < Obfusk::Data::Union
-  union :type
+tree = Obfusk::Data.union :type do
   data :empty
   data :leaf do
     field :value, []
   end
   data :node do
-    field %w{ left right }, [], isa: Tree
+    field %w{ left right }, [], isa: tree # TODO
   end
 end
 
-Tree.valid? {
-  type: :node,
+tree.valid? type: :node,
   left: { type: :empty },
-  right: { type: :leaf, value: "spam!" } }
-}
+  right: { type: :leaf, value: "spam!" }
 ; => true
 ```
 
