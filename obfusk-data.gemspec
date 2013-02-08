@@ -20,5 +20,10 @@ Gem::Specification.new do |s|
   s.files       = %w{ .yardopts README.md Rakefile *.gemspec } \
                 + Dir['{lib,spec}/**/*.rb']
 
+  s.add_runtime_dependency      'hamster'
+
+  s.add_development_dependency  'rake'
+  s.add_development_dependency  'rspec'
+
   s.required_ruby_version = '>= 1.9.1'
 end

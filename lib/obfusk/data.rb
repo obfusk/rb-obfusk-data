@@ -9,12 +9,75 @@
 #
 # --                                                            ; }}}1
 
+require 'hamster'
+require 'set'
+
 module Obfusk
   module Data
+
+    class FieldsHelper                                          # {{{1
+      def initialize
+        @_fields = []
+      end
+
+      def field (*args)
+        @_fields << Obfusk::Data.field *args
+      end
+
+      def _fields
+        @_fields
+      end
+    end                                                         # }}}1
+
+    # --
+
+    def self._blank? (x)
+      String === x || Enumerable === x ? x.empty? : false
+    end
+
+    def self._error (st, *msg)
+      e1 = st.get :errors
+      e2 = e1.add msg.join
+      st.put :errors, e2
+    end
+
+    # --
+
+    # A data validator.  ...
+    def self.data (opts = {}, &block)                           # {{{1
+      o_flds  = opts.get :other_fields
+      isa     = opts.get :isa, []
+
+      fields  = block ? block[FieldsHelper.new]._fields : []
+      st      = Hamster.hash errors: Hamster.vector,
+                  processed: Hamster.set
+
+      ->(x ; st_, ks, pks, eks) {
+        if !isa.empty? && isa.any? { |x| validate x }
+          _error st '[data] has failed isa'                     # TODO
+        else
+          st_ = fields.reduce(st) { |s,f| f[x,s] }
+          ks  = x.keys.to_set
+          pks = st_.get :processed
+          eks = ks - pks
+
+          if !o_flds && !eks.empty?
+            _error st_, '[data] has extraneous fields'
+          elsif Proc === o_flds && !eks.all? o_flds
+            _error st_, '[data] has invalid other fields'
+          else
+            st_
+          end
+        end
+      }
+    end                                                         # }}}1
+
 
     def self._validate_field (name, predicates, opts, x, st)
       # ...
     end
+
+# ..........
 
     def self.field (names, predicates, opts = {})
       f   = ->(n, x, s) { _validate_field n, predicates, opts, x, s }
@@ -24,10 +87,6 @@ module Obfusk
     end
 
     # --
-
-    def self.data (opts = {}, &block)
-      st = { errors: [], processed: ... }
-    end
 
     def self.union (field, opts = {}, &block)
     end

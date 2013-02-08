@@ -62,6 +62,12 @@ Obfusk::Data.valid? tree,
 ## TODO
 []: {{{1
 
+  * IMPLEMENT !!!
+  * ruby api !?
+
+  * write more specs
+  * write more docs
+  * show isa errors
   * ...
 
 []: }}}1
