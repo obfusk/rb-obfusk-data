@@ -1,3 +1,14 @@
+# --                                                            ; {{{1
+#
+# File        : obfusk/data.rb
+# Maintainer  : Felix C. Stegerman <flx@obfusk.net>
+# Date        : 2013-02-08
+#
+# Copyright   : Copyright (C) 2013  Felix C. Stegerman
+# Licence     : GPLv2 or EPLv1
+#
+# --                                                            ; }}}1
+
 module Obfusk
   module Data
 

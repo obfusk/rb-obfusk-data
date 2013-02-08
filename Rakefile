@@ -1,5 +1,7 @@
-require 'rspec/core/rake_task'
+task :spec do
+  sh 'rspec'
+end
 
-$LOAD_PATH.unshift './lib'
-
-RSpec::Core::RakeTask.new :spec
+task :docs do
+  sh 'yardoc | cat'
+end

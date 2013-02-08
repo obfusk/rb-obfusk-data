@@ -17,17 +17,18 @@
   ...
 
 ```ruby
-isa   = ->(cls) { ->(obj) { cls === obj } }
-email = ->(x) { %r{^.*@.*\.[a-z]+$}.match x }
+isa       = ->(cls, obj) { cls === obj } .curry
+is_string = isa[String]
+is_email  = ->(x) { %r{^.*@.*\.[a-z]+$}.match x }
 
 address = Obfusk::Data.data do
-  field %w{ street number postal-code town }, [isa[String]]
-  field :country, [isa[String]], optional: true
+  field %w{ street number postal_code town }, [is_string]
+  field :country, [is_string], optional: true
 end
 
 person = Obfusk::Data.data do
-  field %w{ first_name last_name phone_number }, [isa[String]]
-  field :email, [isa[String], email]
+  field %w{ first_name last_name phone_number }, [is_string]
+  field :email, [is_string, is_email]
   field :address, [], isa: [address]
 end
 
@@ -41,10 +42,11 @@ tree = Obfusk::Data.union :type do
   end
 end
 
-tree.valid? type: :node,
-  left: { type: :empty },
-  right: { type: :leaf, value: "spam!" }
-; => true
+Obfusk::Data.valid? tree,
+  { type: :node,
+    left: { type: :empty },
+    right: { type: :leaf, value: "spam!" } }
+# => true
 ```
 
 []: }}}1
@@ -52,7 +54,8 @@ tree.valid? type: :node,
 ## Specs & Docs
 []: {{{1
 
-  ...
+    $ rake spec
+    $ rake docs
 
 []: }}}1
 
