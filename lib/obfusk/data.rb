@@ -21,7 +21,7 @@ module Obfusk
       end
 
       def field (*args)
-        @_fields << Obfusk::Data.field *args
+        @_fields << Obfusk::Data.field(*args)
       end
 
       def _fields
@@ -49,7 +49,7 @@ module Obfusk
       String === x || Enumerable === x ? x.empty? : false
     end
 
-    def _self._get_keys (x, keys)
+    def self._get_keys (x, keys)
       x.values_at *keys.map(&:to_sym)
     end
 
@@ -136,10 +136,11 @@ module Obfusk
     # Union of data fields.  ...
     def self.union (key, opts = {}, &block)
       b = block[DatasHelper.new]._datas
+      f = field key, [->(x) { Symbol === x }]
 
       ->(x, st ; fields, fields_) {
         fields  = b.fetch x.fetch(key)
-        fields_ = fields + [ field key, [->(x) { Symbol === x }] ]
+        fields_ = fields + [f]
         fields_.reduce(st) { |s, field| field[x, s] }
       }
     end
