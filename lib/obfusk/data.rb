@@ -29,10 +29,28 @@ module Obfusk
       end
     end                                                         # }}}1
 
+    class DatasHelper                                           # {{{1
+      def initialize
+        @_datas = {}
+      end
+
+      def data (value, &block)
+        @_datas[value] = Obfusk::Data.data &block
+      end
+
+      def _datas
+        @_datas
+      end
+    end                                                         # }}}1
+
     # --
 
     def self._blank? (x)
       String === x || Enumerable === x ? x.empty? : false
+    end
+
+    def _self._get_keys (x, keys)
+      x.values_at *keys.map(&:to_sym)
     end
 
     def self._error (st, *msg)
@@ -45,8 +63,8 @@ module Obfusk
 
     # A data validator.  ...
     def self.data (opts = {}, &block)                           # {{{1
-      o_flds  = opts.get :other_fields
-      isa     = opts.get :isa, []
+      o_flds  = opts[:other_fields].to_proc
+      isa     = opts.fetch :isa, []
 
       fields  = block ? block[FieldsHelper.new]._fields : []
       st      = Hamster.hash errors: Hamster.vector,
@@ -56,14 +74,14 @@ module Obfusk
         if !isa.empty? && isa.any? { |x| validate x }
           _error st '[data] has failed isa'                     # TODO
         else
-          st_ = fields.reduce(st) { |s,f| f[x,s] }
+          st_ = fields.reduce(st) { |s, f| f[x, s] }
           ks  = x.keys.to_set
           pks = st_.get :processed
           eks = ks - pks
 
           if !o_flds && !eks.empty?
             _error st_, '[data] has extraneous fields'
-          elsif Proc === o_flds && !eks.all? o_flds
+          elsif !eks.all? o_flds
             _error st_, '[data] has invalid other fields'
           else
             st_
@@ -72,34 +90,71 @@ module Obfusk
       }
     end                                                         # }}}1
 
+    # --
 
-    def self._validate_field (name, predicates, opts, x, st)
-      # ...
-    end
+    def self._validate_field (name, predicates, opts, x, st)    # {{{1
+      field = x[name]
+      preds = predicates.map(&:to_proc)
+      isa   = opts.fetch :isa, []
 
-# ..........
+      st_   = st.put :processed, st.get(:processed).add(name)
+      err   = ->(*msg) {
+        _error st_, (opts.fetch(:message) || msg.join)
+      }
 
+      optional, o_nil, blank, o_if, o_if_not =
+        _get_keys opts, %w{ optional o_nil blank o_if o_if_not }
+
+      if (o_if && !o_if[x]) || (o_if_not && o_if_not[x])
+        st_
+      elsif !x.has_key? name
+        optional ? st_ : err('[field] not found: ', name)
+      elsif field.nil?
+        o_nil || optional ? st_ : err('[field] is nil: ', name)
+      elsif blank?(field) && !(blank || optional)
+        err '[field] is blank: ', name
+      elsif ! preds.all? { |p| p[field] }
+        err '[field] has failed redicates: ', name
+      elsif !isa.empty? && isa.any? { |x| validate x, field }
+        err '[field] has failed isa: ', name
+      else
+        st_
+      end
+    end                                                         # }}}1
+
+    # A data field.  Predicates are functions that are invoked with
+    # the field's value, and must all return true.  ...
     def self.field (names, predicates, opts = {})
       f   = ->(n, x, s) { _validate_field n, predicates, opts, x, s }
-      ns  = Array === names ? names : [names]
+      ns  = Enumerable === names ? names : [names]
 
-      ->(x, st) { names.reduce(st) { |s, name| f[name, x, s] } }
+      ->(x, st) { ns.reduce(st) { |s, name| f[name, x, s] } }
     end
 
     # --
 
-    def self.union (field, opts = {}, &block)
+    # Union of data fields.  ...
+    def self.union (key, opts = {}, &block)
+      b = block[DatasHelper.new]._datas
+
+      ->(x, st ; fields, fields_) {
+        fields  = b.fetch x.fetch(key)
+        fields_ = fields + [ field key, [->(x) { Symbol === x }] ]
+        fields_.reduce(st) { |s, field| field[x, s] }
+      }
     end
 
     # --
 
+    # Validate; returns nil if valid, errors otherwise.
     def self.validate (f, x)
-      e = f[x][:errors]
+      e = f[x].get :errors
       e.empty? ? nil : e
     end
 
+    # Validate; returns true/false.
     def self.valid? (f, x)
-      ! validate(f, x)
+      validate(f, x).nil?
     end
 
   end
