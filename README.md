@@ -66,7 +66,7 @@ Obfusk::Data.valid? tree,
 
   * add more ruby-ish api ?
 
-[]:
+#
 
   * write more specs
   * write more docs
