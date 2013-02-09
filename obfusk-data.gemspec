@@ -17,8 +17,8 @@ Gem::Specification.new do |s|
 
   s.licenses    = %w{ GPLv2 EPLv1 }
 
-  s.files       = %w{ .yardopts README.md Rakefile *.gemspec } \
-                + Dir['{lib,spec}/**/*.rb']
+  s.files       = %w{ .yardopts README.md Rakefile } \
+                + Dir[*%w{ {lib,spec}/**/*.rb *.gemspec }]
 
   s.add_runtime_dependency      'hamster'
 
