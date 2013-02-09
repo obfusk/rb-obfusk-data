@@ -24,7 +24,7 @@ is_object_id = ->(x) {
     x.chars.all? { |c| %{^[a-zA-Z0-9]$}.match c }
 }
 
-is_id_seq = ->(x) { isa[Enumberable, x] && x.all? is_object_id }
+is_id_seq = ->(x) { isa[Enumberable, x] && x.all?(&is_object_id) }
 is_id_map = ->(m) {
   isa[Hash, m] && m.all? { |k,v| is_string[k] && is_object_id[v] }
 }
@@ -33,25 +33,25 @@ is_id_map = ->(m) {
 
 foo = Obfusk::Data.data other_fields: ->(x) { %r{^data_}.match x }
 
-tree = Obfusk::Data.union :type do
+tree = Obfusk::Data.union :type do |_tree|
   data :empty
   data :leaf do
     field :value, []
   end
   data :node do
-    field %w{ left right }, [], isa: tree # TODO
+    field [:left, :right], [], isa: [_tree]
   end
 end
 
 # --
 
 address = Obfusk::Data.data do
-  field %w{ street number postal_code town }, [is_string]
+  field [:street, :number, :postal_code, :town], [is_string]
   field :country, [is_string], optional: true
 end
 
 person = Obfusk::Data.data do
-  field %w{ first_name last_name phone_number }, [is_string]
+  field [:first_name, :last_name, :phone_number], [is_string]
   field :email, [is_string, is_email]
   field :address, [], isa: [address]
 end
@@ -63,7 +63,7 @@ collection = Obfusk::Data.data do
   field :app  , [is_string]
   field :icon , [is_object_id]
   field :items, [is_id_seq]
-  field :title, [is_string?], optional: true
+  field :title, [is_string], optional: true
 end
 
 item = Obfusk::Data.data do
@@ -73,17 +73,17 @@ item = Obfusk::Data.data do
   field :data           , []            , optional: true
   field :title          , [is_string]   , optional: true
   field :url            , [is_url]      , optional: true
-  field %w{ refs files }, [is_id_map]   , optional: true
+  field [:refs, :files] , [is_id_map]   , optional: true
 
   # (not= (contains? x :url)
   #       (contains? (get x :files {}) :url))                   ; TODO
 end
 
 item_files = Obfusk::Data.data do
-  field :url, [is_url], :optional true
+  field :url, [is_url], optional: true
 end
 
-image_item = Obfusk::Data.data :isa [item] do
+image_item = Obfusk::Data.data isa: [item] do
   field :icon , [:nil?]
   field :data , [:nil?], optional: true
   field :files, isa: [item_files]

@@ -1,6 +1,6 @@
 desc 'Run specs'
 task :spec do
-  sh 'rspec'
+  sh 'rspec -cfd'
 end
 
 desc 'Generate docs'

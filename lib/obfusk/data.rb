@@ -15,6 +15,30 @@ require 'set'
 module Obfusk
   module Data
 
+    # this proxy allows us to define recursive types
+    class Proxy                                                 # {{{1
+      # init
+      def initialize
+        @f = nil
+      end
+
+      # bind
+      def bind (f)
+        @f = f
+      end
+
+      # call
+      def call (*args)
+        raise 'unbound Proxy called!' unless @f                 # TODO
+        @f.call *args
+      end
+
+      # call
+      def [] (*args)
+        call *args
+      end
+    end                                                         # }}}1
+
     # this helper allows us to run field in the block passed to data
     class FieldsHelper                                          # {{{1
       # init
@@ -42,7 +66,7 @@ module Obfusk
 
       # add data
       def data (value, &block)
-        @_datas[value] = Obfusk::Data.data &block
+        @_datas[value] = Obfusk::Data._blk_flds block
       end
 
       # get datas
@@ -58,11 +82,6 @@ module Obfusk
       String === x || Enumerable === x ? x.empty? : false
     end
 
-    # if only we had clojure's :keys ;-(
-    def self._get_keys (x, keys)
-      x.values_at *keys.map(&:to_sym)
-    end
-
     # add error
     def self._error (st, *msg)
       e1 = st.get :errors
@@ -70,22 +89,36 @@ module Obfusk
       st.put :errors, e2
     end
 
+    # --
+
+    # if only we had clojure's :keys ;-(
+    def self._get_keys (x, keys)
+      x.values_at *keys.map(&:to_sym)
+    end
+
     # run block in instance of helper
-    def self._blk_hlp (cls, block)
-      cls.new.instance_eval &block
+    def self._blk_hlp (cls, block, *args)
+      x = cls.new
+      x.instance_exec *args, &block
+      x
+    end
+
+    # turn block into fields using FieldsHelper
+    def self._blk_flds (block, *args)
+      block ? _blk_hlp(FieldsHelper, block, *args)._fields : []
     end
 
     # --
 
-    # ...
+    # data validator w/o block magic
     def self.data_ (fields, opts = {})                          # {{{1
-      o_flds  = opts[:other_fields].to_proc
+      o_flds  = opts[:other_fields]
       isa     = opts.fetch :isa, []
       st      = Hamster.hash errors: Hamster.vector,
                   processed: Hamster.set
 
       ->(x ; st_, ks, pks, eks) {
-        if !isa.empty? && isa.any? { |x| validate x }
+        if isa.any? { |x| validate x }
           _error st '[data] has failed isa'                     # TODO
         else
           st_ = fields.reduce(st) { |s, f| f[x, s] }
@@ -95,7 +128,7 @@ module Obfusk
 
           if !o_flds && !eks.empty?
             _error st_, '[data] has extraneous fields'
-          elsif !eks.all? o_flds
+          elsif !eks.all?(&o_flds)
             _error st_, '[data] has invalid other fields'
           else
             st_
@@ -106,8 +139,10 @@ module Obfusk
 
     # A data validator.  ...
     def self.data (opts = {}, &block)
-      fields = block ? _blk_hlp(FieldsHelper, block)._fields : []
-      data_ fields, opts
+      proxy = Proxy.new
+      data  = data_ _blk_flds(block, proxy), opts
+      proxy.bind data
+      data
     end
 
     # --
@@ -119,9 +154,7 @@ module Obfusk
       isa   = opts.fetch :isa, []
 
       st_   = st.put :processed, st.get(:processed).add(name)
-      err   = ->(*msg) {
-        _error st_, (opts.fetch(:message) || msg.join)
-      }
+      err   = ->(*msg) { _error st_, (opts[:message] || msg.join) }
 
       optional, o_nil, blank, o_if, o_if_not =
         _get_keys opts, %w{ optional o_nil blank o_if o_if_not }
@@ -129,15 +162,15 @@ module Obfusk
       if (o_if && !o_if[x]) || (o_if_not && o_if_not[x])
         st_
       elsif !x.has_key? name
-        optional ? st_ : err('[field] not found: ', name)
+        optional ? st_ : err['[field] not found: ', name]
       elsif field.nil?
-        o_nil || optional ? st_ : err('[field] is nil: ', name)
-      elsif blank?(field) && !(blank || optional)
-        err '[field] is blank: ', name
-      elsif ! preds.all? { |p| p[field] }
-        err '[field] has failed redicates: ', name
-      elsif !isa.empty? && isa.any? { |x| validate x, field }
-        err '[field] has failed isa: ', name
+        o_nil || optional ? st_ : err['[field] is nil: ', name]
+      elsif _blank?(field) && !(blank || optional)
+        err['[field] is blank: ', name]
+      elsif !preds.all? { |p| p[field] }
+        err['[field] has failed predicates: ', name]
+      elsif isa.any? { |x| validate x, field }
+        err['[field] has failed isa: ', name]
       else
         st_
       end
@@ -154,31 +187,41 @@ module Obfusk
 
     # --
 
-    # ...
-    def self.union_ (key, datas)
+    # union w/o block magic and data wrapping
+    def self.union__ (key, datas)
       f = field key, [->(x) { Symbol === x }]
 
-      ->(x, st ; fields, fields_) {
-        fields = datas.fetch x.fetch(key) + [f]
+      ->(x, st ; fields) {
+        fields = datas.fetch(x.fetch(key)) + [f]
         fields.reduce(st) { |s, field| field[x, s] }
       }
     end
 
+    # union w/o block magic
+    def self.union_ (key, datas, opts = {})
+      data_ [union__(key, datas)], opts
+    end
+
     # Union of data fields.  ...
     def self.union (key, opts = {}, &block)
-      datas = _blk_hlp(DatasHelper, block)._datas
-      data_ [union_(key, datas)], opts
+      proxy = Proxy.new
+      datas = _blk_hlp(DatasHelper, block, proxy)._datas
+      data  = union_ key, datas, opts
+      proxy.bind data
+      data
     end
 
     # --
 
-    # Validate; returns nil if valid, errors otherwise.
+    # Validate.
+    # @return [nil]       if valid
+    # @return [<String>]  errors otherwise
     def self.validate (f, x)
       e = f[x].get :errors
-      e.empty? ? nil : e
+      e.empty? ? nil : e.to_a
     end
 
-    # Validate; returns true/false.
+    # Validate.
     def self.valid? (f, x)
       validate(f, x).nil?
     end
