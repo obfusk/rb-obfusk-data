@@ -12,3 +12,8 @@ desc 'List undocumented objects'
 task :undocumented do
   sh 'yard stats --list-undoc'
 end
+
+desc 'Cleanup'
+task :clean do
+  sh 'rm -rf .yardoc/ doc/'
+end
