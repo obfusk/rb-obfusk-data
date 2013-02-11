@@ -159,7 +159,7 @@ module Obfusk
       elsif !preds.all? { |p| p[field] }
         err['[field] has failed predicates: ', name]
       elsif isa.any? { |x| validate x, field }
-        err['[field] has failed isa: ', name]
+        err['[field] has failed isa: ', name]                   # TODO
       else
         st_
       end
