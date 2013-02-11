@@ -5,9 +5,9 @@ Gem::Specification.new do |s|
   s.homepage    = 'https://github.com/obfusk/rb-obfusk-data'
   s.summary     = 'data validation combinator library for ruby'
 
-  # s.description = <<-END.gsub(/^ {4}/, '')
-  #   ...
-  # END
+  s.description = <<-END.gsub(/^ {4}/, '')                      # TODO
+    ...
+  END
 
   s.version     = Obfusk::Data::VERSION
   s.date        = Obfusk::Data::DATE
