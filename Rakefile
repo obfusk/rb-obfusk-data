@@ -22,6 +22,6 @@ desc 'Build SNAPSHOT gem'
 task :snapshot do
   v = Time.new.strftime '%Y%m%d%H%M%S'
   f = 'lib/obfusk/data/version.rb'
-  sh "sed -ri~ 's!(-SNAPSHOT)!\1-#{v}!' #{f}"
+  sh "sed -ri~ 's!(SNAPSHOT)!\\1-#{v}!' #{f}"
   sh 'gem build obfusk-data.gemspec'
 end
