@@ -2,7 +2,7 @@
 #
 # File        : obfusk/data.rb
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2013-02-08
+# Date        : 2013-02-11
 #
 # Copyright   : Copyright (C) 2013  Felix C. Stegerman
 # Licence     : GPLv2 or EPLv1
@@ -16,28 +16,17 @@ module Obfusk
   module Data
 
     # this proxy allows us to define recursive types
-    class Proxy                                                 # {{{1
-      # init
-      def initialize
-        @f = nil
-      end
-
-      # bind
-      def bind (f)
-        @f = f
-      end
-
-      # call
-      def call (*args)
-        raise 'unbound Proxy called!' unless @f                 # TODO
-        @f.call *args
-      end
-
-      # call
-      def [] (*args)
-        call *args
-      end
-    end                                                         # }}}1
+    PROXY = ->(; f, bind, proxy) {                              # {{{1
+      proxy = ->(*args) {
+        raise 'unbound PROXY called!' unless f                  # TODO
+        f[*args]
+      }
+      bind = ->(g) {
+        raise 'PROXY can only be bound once' if f               # TODO
+        f = g
+      }
+      [proxy, bind]
+    }                                                           # }}}1
 
     # this helper allows us to run field in the block passed to data
     class FieldsHelper                                          # {{{1
@@ -84,7 +73,7 @@ module Obfusk
 
     # add error
     def self._error (st, *msg)
-      e1 = st.get :errors
+      e1 = st[:errors]
       e2 = e1.add msg.join
       st.put :errors, e2
     end
@@ -123,12 +112,12 @@ module Obfusk
         else
           st_ = fields.reduce(st) { |s, f| f[x, s] }
           ks  = x.keys.to_set
-          pks = st_.get :processed
+          pks = st_[:processed]
           eks = ks - pks
 
           if !o_flds && !eks.empty?
             _error st_, '[data] has extraneous fields'
-          elsif !eks.all?(&o_flds)
+          elsif o_flds.respond_to?(:to_proc) && !eks.all?(&o_flds)
             _error st_, '[data] has invalid other fields'
           else
             st_
@@ -139,9 +128,9 @@ module Obfusk
 
     # A data validator.  ...
     def self.data (opts = {}, &block)
-      proxy = Proxy.new
-      data  = data_ _blk_flds(block, proxy), opts
-      proxy.bind data
+      proxy, bind = PROXY[]
+      data        = data_ _blk_flds(block, proxy), opts
+      bind[data]
       data
     end
 
@@ -153,7 +142,7 @@ module Obfusk
       preds = predicates.map(&:to_proc)
       isa   = opts.fetch :isa, []
 
-      st_   = st.put :processed, st.get(:processed).add(name)
+      st_   = st.put :processed, st[:processed].add(name)
       err   = ->(*msg) { _error st_, (opts[:message] || msg.join) }
 
       optional, o_nil, blank, o_if, o_if_not =
@@ -204,10 +193,10 @@ module Obfusk
 
     # Union of data fields.  ...
     def self.union (key, opts = {}, &block)
-      proxy = Proxy.new
-      datas = _blk_hlp(DatasHelper, block, proxy)._datas
-      data  = union_ key, datas, opts
-      proxy.bind data
+      proxy, bind = PROXY[]
+      datas       = _blk_hlp(DatasHelper, block, proxy)._datas
+      data        = union_ key, datas, opts
+      bind[data]
       data
     end
 
@@ -217,7 +206,7 @@ module Obfusk
     # @return [nil]       if valid
     # @return [<String>]  errors otherwise
     def self.validate (f, x)
-      e = f[x].get :errors
+      e = f[x][:errors]
       e.empty? ? nil : e.to_a
     end
 
