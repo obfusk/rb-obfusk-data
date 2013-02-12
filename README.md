@@ -51,6 +51,32 @@ Obfusk::Data.valid? tree,
 # => true
 ```
 
+```ruby
+class X < Obfusk::Data::ValidHash
+  data do
+    field :spam, []
+  end
+end
+
+class Y < Obfusk::Data::ValidHamster
+  data do
+    field :spam, []
+  end
+end
+
+x = X.new spam: 99; x[:spam] = 88
+# OK
+
+X.new
+# raises Obfusk::Data::ValidHash::InvalidError
+
+y = Y.new spam: 'yuck!'
+# OK
+
+Y.put :invalid, 'oops.'
+# raises Obfusk::Data::ValidHamster::InvalidError
+```
+
 []: }}}1
 
 ## Specs & Docs
@@ -63,10 +89,6 @@ Obfusk::Data.valid? tree,
 
 ## TODO
 []: {{{1
-
-  * add more ruby-ish api ?
-
-#
 
   * write more specs
   * write more docs

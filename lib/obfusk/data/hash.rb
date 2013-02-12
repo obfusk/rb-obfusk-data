@@ -9,66 +9,41 @@
 #
 # --                                                            ; }}}1
 
-require 'obfusk/data'
+require 'obfusk/data/base'
 
 module Obfusk
   module Data
 
-    # ...
-    class Hash < ::Hash                                         # {{{1
+    # @todo document
+    class ValidHash < Hash                                      # {{{1
 
-      class InvalidHashError < RuntimeError; end
+      include Base
+
+      class InvalidError < RuntimeError; end
 
       %w{
         []= clear delete delete_if keep_if merge! reject! replace
         select! shift store update
       }.map(&:to_sym).each do |m|
-        define_method m do |*args, &block|
-          r = super(*args, &block); validate!; r
+        define_method m do |*a, &b|
+          r = super(*a, &b); validate!; r
         end
       end
-
-      # --
 
       def self.[] (*a, &b)
         x = super; x.validate!; x
       end
 
-      # --
-
-      def self.data (*a, &b)
-        const_set :VALIDATOR, Obfusk::Data.data(*a, &b)
-      end
-
-      def self.union (*a, &b)
-        const_set :VALIDATOR, Obfusk::Data.union(*a, &b)
-      end
-
-      # --
-
       def initialize (data = {}, &block)
         super(&block); self.merge! data
       end
-
-      # --
-
-      def validate!
-        e = Obfusk::Data.validate self.class::VALIDATOR, self
-        raise InvalidHashError, e.join('; ') if e
-      end
-
-      def valid?
-        Obfusk::Data.valid? self.class::VALIDATOR, self
-      end
-
-      # --
 
       def compare_by_identity
         raise NotImplementedError
       end
 
       def invert
-        ::Hash[self].invert
+        Hash[self].invert
       end
 
       def merge (*a, &b)
@@ -84,7 +59,7 @@ module Obfusk
       end
 
       def to_hash
-        ::Hash[self]
+        Hash[self]
       end
 
     end                                                         # }}}1

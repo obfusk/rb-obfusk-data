@@ -1,5 +1,10 @@
 desc 'Run specs'
 task :spec do
+  sh 'rspec -c'
+end
+
+desc 'Run specs verbosely'
+task 'spec:verbose' do
   sh 'rspec -cfd'
 end
 
@@ -9,7 +14,7 @@ task :docs do
 end
 
 desc 'List undocumented objects'
-task :undocumented do
+task 'docs:undoc' do
   sh 'yard stats --list-undoc'
 end
 
@@ -27,6 +32,6 @@ task :snapshot do
 end
 
 desc 'Undo SNAPSHOT gem'
-task 'snapshot-undo' do
+task 'snapshot:undo' do
   sh 'git checkout -- lib/obfusk/data/version.rb'
 end

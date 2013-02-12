@@ -1,6 +1,6 @@
 # --                                                            ; {{{1
 #
-# File        : obfusk/data/hash_spec.rb
+# File        : obfusk/data/hamster_spec.rb
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
 # Date        : 2013-02-11
 #
@@ -9,31 +9,32 @@
 #
 # --                                                            ; }}}1
 
-require 'obfusk/data/hash'
+require 'obfusk/data/hamster'
 
-module Obfusk::Data::Hash__Spec
+module Obfusk::Data::Hamster__Spec
 
-  class Bar < Obfusk::Data::ValidHash
+  class Bar < Obfusk::Data::ValidHamster
     data other_fields: ->(x) { /other/.match x } do
       field :bar, [->(x) { /bar/.match x }], optional: true
     end
   end
 
-  class Baz < Obfusk::Data::ValidHash
+  class Baz < Obfusk::Data::ValidHamster
     data do
-      field :baz, []
+      field :baz  , []
+      field :maybe, [], optional: true
     end
   end
 
-  E = Obfusk::Data::ValidHash::InvalidError
+  E = Obfusk::Data::ValidHamster::InvalidError
 
   # --
 
-  describe Obfusk::Data::ValidHash do
+  describe Obfusk::Data::ValidHamster do
 
     context 'Bar' do                                            # {{{1
-      it 'valid empty Bar' do
-        Bar.new
+      it 'valid empty Bar (2x)' do
+        Bar.new; Bar.empty
       end
       it 'valid Bar' do
         Bar.new bar: 'bar?!'
@@ -46,18 +47,31 @@ module Obfusk::Data::Hash__Spec
       end
       it 'invalid Bar merge' do
         b = Bar.new
-        expect { b.merge baz: 42 }.to raise_error E
+        expect { b.merge Hamster.hash baz: 42 }.to raise_error E
       end
-      it 'invalid Bar []=' do
+      it 'invalid Bar put' do
         b = Bar.new
-        expect { b[:bar] = 'hi!' }.to raise_error E
+        expect { b.put :bar, 'hi!' }.to raise_error E
       end
     end                                                         # }}}1
 
     context 'Baz' do                                            # {{{1
-      it 'invalid Baz clear' do
-        b = Baz.new baz: 'ok'
-        expect { b.clear }.to raise_error E
+      it 'valid Baz' do
+        Baz.new baz: 'ok!'
+      end
+      it 'valid Baz except' do
+        b = Baz.new baz: 1, maybe: 2
+        b.except :maybe
+      end
+      it 'invalid empty Baz (new)' do
+        expect { Baz.new }.to raise_error E
+      end
+      it 'invalid empty Baz (empty)' do
+        expect { Baz.empty }.to raise_error E
+      end
+      it 'invalid Baz except' do
+        b = Baz.new baz: 1, maybe: 2
+        expect { b.except :baz }.to raise_error E
       end
     end                                                         # }}}1
 
