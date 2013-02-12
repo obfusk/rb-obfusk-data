@@ -73,7 +73,7 @@ X.new
 y = Y.new spam: 'yuck!'
 # OK
 
-Y.put :invalid, 'oops.'
+y.put :invalid, 'oops.'
 # raises Obfusk::Data::ValidHamster::InvalidError
 ```
 
