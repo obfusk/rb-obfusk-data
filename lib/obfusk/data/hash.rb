@@ -2,14 +2,14 @@
 #
 # File        : obfusk/data/hash.rb
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2013-02-11
+# Date        : 2013-02-13
 #
 # Copyright   : Copyright (C) 2013  Felix C. Stegerman
 # Licence     : GPLv2 or EPLv1
 #
 # --                                                            ; }}}1
 
-require 'obfusk/data/base'
+require 'obfusk/data/valid'
 
 module Obfusk
   module Data
@@ -17,9 +17,7 @@ module Obfusk
     # @todo document
     class ValidHash < Hash                                      # {{{1
 
-      include Base
-
-      class InvalidError < RuntimeError; end
+      include Valid
 
       %w{
         []= clear delete delete_if keep_if merge! reject! replace

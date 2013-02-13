@@ -2,59 +2,47 @@
 #
 # File        : obfusk/data/hamster.rb
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2013-02-11
+# Date        : 2013-02-13
 #
 # Copyright   : Copyright (C) 2013  Felix C. Stegerman
 # Licence     : GPLv2 or EPLv1
 #
 # --                                                            ; }}}1
 
-require 'obfusk/data/base'
+require 'obfusk/data/valid'
 
 module Obfusk
   module Data
 
     # @todo document
-    # @note
-    #   getting this to work depends on Hamster implementation details
-    #   as well as some black magic ;-(
+    # @note depends on Hamster implementation details !!!
     class ValidHamster < Hamster::Hash                          # {{{1
 
-      include Base
+      include Valid
 
-      class InvalidError < RuntimeError; end
-
-      def self.__from_hamster (x)
-        data  = x.instance_eval { [@trie, @default] }
-        y     = allocate
-        y.instance_eval { @trie, @default = data }
-        y
-      end
-
-      def self.__to_hamster (x)
-        data  = x.instance_eval { [@trie, @default] }
-        y     = Hamster::Hash.allocate
-        y.instance_eval { @trie, @default = data }
-        y
-      end
-
-      def self.new (*a, &b)
-        x = __from_hamster Hamster::Hash.new(*a, &b)
-        x.validate!; x
+      def self.new (pairs = {}, &b)
+        @empty ||= super()
+        x = b ? super(&b) : @empty
+        pairs.empty? ? x.validate! : x.merge_hash(pairs)
       end
 
       def self.empty
-        x = @empty ||= new; x.validate!; x
+        @empty ? @empty.validate! : new
       end
 
-      def except (*a, &b)
-        y = self.class.__to_hamster self
-        x = self.class.__from_hamster y.except(*a, &b)
-        x.validate!; x
+      def except (*keys)
+        trie = keys.reduce(@trie) { |t, k| t.delete k }
+        transform_unless(trie.equal? @trie) { @trie = trie }
       end
 
-      def transform (*a, &b)
-        x = super; x.validate!; x
+      def merge_hash (pairs)
+        transform_unless(pairs.empty?) {
+          @trie = pairs.reduce(@trie) { |t, p| t.put *p }
+        }
+      end
+
+      def transform (&b)
+        super.validate!
       end
 
     end                                                         # }}}1

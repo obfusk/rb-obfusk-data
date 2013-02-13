@@ -1,8 +1,8 @@
 # --                                                            ; {{{1
 #
-# File        : obfusk/data/base.rb
+# File        : obfusk/data/valid.rb
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2013-02-11
+# Date        : 2013-02-13
 #
 # Copyright   : Copyright (C) 2013  Felix C. Stegerman
 # Licence     : GPLv2 or EPLv1
@@ -14,7 +14,10 @@ require 'obfusk/data'
 module Obfusk
   module Data
 
-    module Base
+    # @todo document
+    module Valid
+
+      class InvalidError < RuntimeError; end
 
       def self.included (base)
         base.extend ClassMethods
@@ -35,6 +38,7 @@ module Obfusk
       def validate!
         e = Obfusk::Data.validate self.class::VALIDATOR, self
         raise self.class::InvalidError, e.join('; ') if e
+        self
       end
 
       def valid?
