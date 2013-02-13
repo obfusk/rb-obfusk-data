@@ -2,7 +2,7 @@
 #
 # File        : obfusk/data/hamster_spec.rb
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2013-02-11
+# Date        : 2013-02-13
 #
 # Copyright   : Copyright (C) 2013  Felix C. Stegerman
 # Licence     : GPLv2 or EPLv1
@@ -26,7 +26,7 @@ module Obfusk::Data::Hamster__Spec
     end
   end
 
-  E = Obfusk::Data::ValidHamster::InvalidError
+  E = Obfusk::Data::Valid::InvalidError
 
   # --
 
@@ -43,15 +43,15 @@ module Obfusk::Data::Hamster__Spec
         Bar.new some_other_field: 37
       end
       it 'invalid Bar' do
-        expect { Bar.new baz: 42 }.to raise_error E
+        expect { Bar.new baz: 42 }.to raise_error(E)
       end
       it 'invalid Bar merge' do
         b = Bar.new
-        expect { b.merge Hamster.hash baz: 42 }.to raise_error E
+        expect { b.merge Hamster.hash baz: 42 }.to raise_error(E)
       end
       it 'invalid Bar put' do
         b = Bar.new
-        expect { b.put :bar, 'hi!' }.to raise_error E
+        expect { b.put :bar, 'hi!' }.to raise_error(E)
       end
     end                                                         # }}}1
 
@@ -64,14 +64,14 @@ module Obfusk::Data::Hamster__Spec
         b.except :maybe
       end
       it 'invalid empty Baz (new)' do
-        expect { Baz.new }.to raise_error E
+        expect { Baz.new }.to raise_error(E)
       end
       it 'invalid empty Baz (empty)' do
-        expect { Baz.empty }.to raise_error E
+        expect { Baz.empty }.to raise_error(E)
       end
       it 'invalid Baz except' do
         b = Baz.new baz: 1, maybe: 2
-        expect { b.except :baz }.to raise_error E
+        expect { b.except :baz }.to raise_error(E)
       end
     end                                                         # }}}1
 

@@ -2,7 +2,7 @@
 #
 # File        : obfusk/data/hash_spec.rb
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2013-02-11
+# Date        : 2013-02-13
 #
 # Copyright   : Copyright (C) 2013  Felix C. Stegerman
 # Licence     : GPLv2 or EPLv1
@@ -20,12 +20,14 @@ module Obfusk::Data::Hash__Spec
   end
 
   class Baz < Obfusk::Data::ValidHash
-    data do
-      field :baz, []
-    end
+    data { field :baz, [] }
   end
 
-  E = Obfusk::Data::ValidHash::InvalidError
+  class Qux < Obfusk::Data::UnsafeValidHash
+    data { field :qux, [] }
+  end
+
+  E = Obfusk::Data::Valid::InvalidError
 
   # --
 
@@ -42,22 +44,42 @@ module Obfusk::Data::Hash__Spec
         Bar.new some_other_field: 37
       end
       it 'invalid Bar' do
-        expect { Bar.new baz: 42 }.to raise_error E
+        expect { Bar.new baz: 42 }.to raise_error(E)
       end
       it 'invalid Bar merge' do
         b = Bar.new
-        expect { b.merge baz: 42 }.to raise_error E
+        expect { b.merge baz: 42 }.to raise_error(E)
+        b.should be_valid
       end
       it 'invalid Bar []=' do
         b = Bar.new
-        expect { b[:bar] = 'hi!' }.to raise_error E
+        expect { b[:bar] = 'hi!' }.to raise_error(E)
+        b.should be_valid
       end
     end                                                         # }}}1
 
     context 'Baz' do                                            # {{{1
       it 'invalid Baz clear' do
         b = Baz.new baz: 'ok'
-        expect { b.clear }.to raise_error E
+        expect { b.clear }.to raise_error(E)
+        b.should be_valid
+      end
+      it 'invalid Baz reject!' do
+        b = Baz.new baz: 'ok'
+        f = b.reject!
+        expect { f.each { true } }.to raise_error(E)
+        b[:baz].should == 'ok'
+        b.should be_valid
+      end
+    end                                                         # }}}1
+
+    context 'Qux' do                                            # {{{1
+      it 'invalid Qux reject!' do
+        q = Qux.new qux: 'ok'
+        f = q.reject!
+        expect { f.each { true } }.to raise_error(E)
+        q.should be_empty
+        q.should_not be_valid
       end
     end                                                         # }}}1
 
